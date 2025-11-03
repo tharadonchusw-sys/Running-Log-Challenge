@@ -34,8 +34,6 @@
             border-radius: 5px; background-color: #f9f9f9; 
         }
         .record-details { flex-grow: 1; padding-right: 15px; }
-        /* 💡 เปลี่ยนเป็นลิงก์แทนรูปภาพ (แต่ยังคงแสดงผลได้ถ้าเป็นลิงก์ภาพโดยตรง) */
-        .record-photo-link { max-width: 100px; max-height: 100px; border-radius: 4px; object-fit: cover; margin-left: 10px; } 
         .distance { font-size: 1.3em; font-weight: bold; }
         .runner-1 { color: #e91e63; } /* Good Girl */
         .runner-2 { color: #3f51b5; } /* Good Boy */
@@ -53,12 +51,20 @@
         }
         .delete-btn:hover { background-color: #d32f2f; }
 
+        /* Progress Bar Styling (NEW) */
+        .progress-container { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; background-color: #f0f0ff; }
+        .progress-bar-wrapper { margin-bottom: 10px; }
+        .progress-bar { height: 25px; background-color: #ddd; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+        .progress-fill { height: 100%; text-align: right; line-height: 25px; color: white; padding-right: 5px; transition: width 0.5s ease-in-out; }
+        .progress-runner-1 { background-color: #e91e63; }
+        .progress-runner-2 { background-color: #3f51b5; }
+
         /* Mobile Adjustments */
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 10px; }
             .record-item { flex-direction: column; align-items: flex-start; }
             .record-details { padding-right: 0; margin-bottom: 10px; }
-            .record-photo-link, .delete-btn { margin-top: 10px; margin-left: 0; }
+            .delete-btn { margin-top: 10px; margin-left: 0; }
             #login-form input[type="text"] { width: 100%; margin-right: 0; margin-bottom: 10px; }
             #login-form { flex-direction: column; }
         }
@@ -67,6 +73,13 @@
 <body>
     <div class="container">
         <h1>🏃 50km Running Challenge</h1>
+
+        <div class="progress-container">
+            <h2>🏆 Challenge Progress</h2>
+            <div id="progress-area">
+                <p style="text-align: center; color: #777;">Loading progress...</p>
+            </div>
+        </div>
 
         <div id="login-form-container">
             <p id="user-status" style="font-size: 1.1em;">Please enter your secret code</p>
@@ -92,7 +105,7 @@
 
         <h2>All Running Records</h2>
         <ul id="records-list">
-            <li style="text-align: center; color: #999;">Please log in to view records.</li>
+            <li style="text-align: center; color: #999;">Loading records...</li>
         </ul>
     </div>
 
@@ -115,6 +128,9 @@
   		appId: "1:706728904935:web:a9fc018c50c062a3feba42",
   		measurementId: "G-39EJ4D4VPP"
 	};
+        
+        // Define Target (50km)
+        const TARGET_KM = 50;
 
         // 3. Custom User Data (with Emojis)
         const USERS = {
@@ -126,7 +142,7 @@
         const app = firebase.initializeApp(firebaseConfig);
         const auth = app.auth();
         const db = app.firestore();
-        const storage = app.storage(); // We keep Storage init just in case, but won't use it for upload
+        const storage = app.storage(); 
 
         // 5. Get DOM elements
         const form = document.getElementById('record-form');
@@ -134,13 +150,16 @@
         const submitBtn = document.getElementById('submit-btn');
         const userStatus = document.getElementById('user-status');
         const loginForm = document.getElementById('login-form');
+        const progressArea = document.getElementById('progress-area'); // New Element
         
         let currentUser = null; 
 
-        // **********************************************
-        // Part A: Code Login System
-        // **********************************************
 
+        // **********************************************
+        // Part A: Login (unchanged)
+        // **********************************************
+        // (Login logic remains the same, but loadAndDisplayRecords is called upon successful login)
+        
         loginForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             const code = document.getElementById('user-code').value;
@@ -148,8 +167,8 @@
 
             if (user) {
                 try {
+                    // Sign in to allow WRITE/DELETE permissions based on Firestore Rules
                     await auth.signInAnonymously(); 
-
                     currentUser = user; 
                     
                     userStatus.innerHTML = `Welcome back, **${currentUser.name}**! (<a href="#" id="logout-link">Logout</a>)`;
@@ -162,6 +181,7 @@
                         handleLogout();
                     });
 
+                    // We call loadAndDisplayRecords (which also updates the progress bar)
                     loadAndDisplayRecords(); 
 
                 } catch (error) {
@@ -172,67 +192,107 @@
                 alert('Invalid code. Please enter 1101 or 0502.');
             }
         });
-
+        
         function handleLogout() {
             currentUser = null;
             userStatus.innerHTML = "Please enter your secret code";
             loginForm.style.display = 'flex'; 
             document.getElementById('user-code').value = '';
             form.style.display = 'none';
-            recordsList.innerHTML = '<li style="text-align: center; color: #999;">Please log in to view records.</li>';
+            // When logging out, we still display records (since read is public)
+            loadAndDisplayRecords(); 
         }
 
-
         // **********************************************
-        // Part B: Display and Delete Functionality
+        // Part B: Display, Progress Bar, and Delete
         // **********************************************
         
-        // Delete function (only deletes Firestore record now)
-        async function deleteRecord(docId, photoURL) {
+        async function deleteRecord(docId) {
             if (!confirm('Confirm deletion of this record?')) {
                 return;
             }
 
             try {
-                // Since we are using an external URL, we don't need to delete from Storage.
-                // We just delete the document from Firestore.
+                // Delete the document from Firestore (Storage deletion is skipped as we use URLs)
                 await db.collection('runs').doc(docId).delete();
-                
                 alert('Record deleted successfully!');
-
             } catch (error) {
                 console.error("Error deleting record: ", error);
                 alert(`Error deleting data: ${error.message}`);
             }
         }
 
-
-        // Display function (uses external URL)
         function displayRecord(data, docId) {
             const listItem = document.createElement('li');
             listItem.className = 'record-item';
 
             const dateStr = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'N/A';
             const userColorClass = data.colorClass || 'runner-2'; 
+            
+            // Only display delete button if a user is logged in
+            const deleteButtonHTML = currentUser ? 
+                `<button class="delete-btn" data-id="${docId}">Delete</button>` : 
+                '';
 
             listItem.innerHTML = `
                 <div class="record-details">
                     <p class="${userColorClass}" style="margin: 0;">👤 **${data.userName}**</p>
                     <p style="margin: 5px 0 0 0;">🗓️ ${dateStr}</p>
                     <p class="distance ${userColorClass}" style="margin-top: 5px;">${parseFloat(data.km).toFixed(2)} km</p>
-                    
                     ${data.photoURL ? `<p style="margin: 5px 0 0 0;">🔗 <a href="${data.photoURL}" target="_blank">View Proof</a></p>` : ''}
                 </div>
-                
-                <button class="delete-btn" data-id="${docId}">Delete</button>
+                ${deleteButtonHTML}
             `;
             recordsList.prepend(listItem);
             
             const deleteButton = listItem.querySelector('.delete-btn');
             if (deleteButton) {
-                 // Note: photoURL is null now, but the function still works by skipping storage deletion
-                 deleteButton.addEventListener('click', () => deleteRecord(deleteButton.dataset.id, null));
+                 deleteButton.addEventListener('click', () => deleteRecord(deleteButton.dataset.id));
             }
+        }
+        
+        // 💡 NEW FUNCTION: Update the Progress Bar
+        function updateProgressBar(records) {
+            const totalKm = {};
+            const userDetails = {};
+            
+            // Initialize totals and details
+            Object.values(USERS).forEach(user => {
+                totalKm[user.uid] = 0;
+                userDetails[user.uid] = user;
+            });
+
+            // Calculate totals from all records
+            records.forEach(data => {
+                if (totalKm.hasOwnProperty(data.userId)) {
+                    totalKm[data.userId] += parseFloat(data.km);
+                }
+            });
+
+            // Determine max distance run by any single user (for comparison)
+            const maxRun = Math.max(totalKm[USERS['1101'].uid], totalKm[USERS['0502'].uid], TARGET_KM); 
+            const progressBarHTML = [];
+
+            Object.values(USERS).forEach(user => {
+                const uid = user.uid;
+                const km = totalKm[uid].toFixed(2);
+                
+                // Calculate percentage based on the target or the max runner (for bar length)
+                const percentage = Math.min(100, (km / maxRun) * 100); 
+
+                progressBarHTML.push(`
+                    <div class="progress-bar-wrapper">
+                        <p style="font-weight: bold; margin-bottom: 3px;" class="${user.colorClass}">${user.name}: ${km} km / ${TARGET_KM} km</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-${user.colorClass}" style="width: ${percentage}%;">
+                                ${percentage > 5 ? `${km} km` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+
+            progressArea.innerHTML = progressBarHTML.join('');
         }
 
 
@@ -241,21 +301,33 @@
              
             db.collection("runs").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
                 recordsList.innerHTML = '';
+                const recordsData = [];
+
                 if (snapshot.empty) {
                      recordsList.innerHTML = '<li style="text-align: center; color: #999;">No running records yet.</li>';
-                     return;
+                } else {
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        recordsData.push(data);
+                        displayRecord(data, doc.id); 
+                    });
                 }
-                snapshot.forEach((doc) => {
-                    displayRecord(doc.data(), doc.id); 
-                });
+                
+                // 💡 Always update the progress bar after loading data
+                updateProgressBar(recordsData);
+
             }, (error) => {
                 console.error("Error loading documents: ", error);
                 recordsList.innerHTML = '<li style="text-align: center; color: red;">Error loading data.</li>';
+                progressArea.innerHTML = '<p style="color: red;">Error loading progress.</p>';
             });
         }
         
+        // 💡 Initial load (to show records even before login)
+        loadAndDisplayRecords();
 
-        // 7. Save Run Record (Using URL Link)
+
+        // 7. Save Run Record (Using URL Link - unchanged logic)
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
             
@@ -268,7 +340,7 @@
             submitBtn.textContent = 'Saving record...'; 
 
             const km = document.getElementById('kilometers').value;
-            const photoURL = document.getElementById('photo-url').value; // Get URL from input
+            const photoURL = document.getElementById('photo-url').value; 
 
             if (!km || !photoURL) {
                 alert('Please enter distance and proof URL.');
@@ -278,26 +350,9 @@
             }
 
             try {
-                // Save to Firestore (no Storage upload needed)
                 await db.collection("runs").add({
                     userId: currentUser.uid,
                     userName: currentUser.name, 
                     colorClass: currentUser.colorClass, 
                     km: parseFloat(km),
-                    photoURL: photoURL, // Save the external URL
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                alert('Run record saved successfully!');
-                form.reset();
-            } catch (error) {
-                console.error("Error adding document: ", error);
-                alert(`Error saving data: ${error.message}`);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Add Run Record';
-            }
-        });
-    </script>
-</body>
-</html>
+                    photoURL
