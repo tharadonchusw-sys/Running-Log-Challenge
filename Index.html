@@ -294,7 +294,7 @@
                     canvas.height = height;
 
                     pica().resize(img, canvas)
-                        .then(result => pica().toBlob(result, 'image/jpeg', 0.85)) 
+                        .then(result => pica().toBlob(result, 'image/jpeg', 0.75)) 
                         .then(blob => resolve(blob))
                         .catch(error => reject(error));
                 };
