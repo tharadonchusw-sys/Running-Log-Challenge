@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏃💨 Running Challenge Log</title>
+    <title>🏃💨 Running Challenge Log (Code Login)</title>
     
     <style>
-        /* CSS สำหรับจัดรูปแบบ */
+        /* CSS เดิม */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
         .container { max-width: 900px; margin: 20px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
         h1 { color: #333; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
         h2 { color: #555; border-left: 5px solid #ff9800; padding-left: 10px; }
         
-        #login-status { text-align: center; margin-bottom: 20px; padding: 15px; background-color: #ffe0b2; border-radius: 5px; }
-        #google-login-btn { padding: 10px 20px; background-color: #db4437; color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 16px; transition: background-color 0.3s; }
-        #google-login-btn:hover { background-color: #c33d32; }
+        #login-form-container { text-align: center; margin-bottom: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 5px; }
+        #login-form input[type="text"], #login-form button { padding: 10px; margin: 5px; border-radius: 4px; border: 1px solid #ccc; }
+        #login-btn { background-color: #2196f3; color: white; border: none; cursor: pointer; font-size: 16px; transition: background-color 0.3s; }
+        #login-btn:hover { background-color: #1e88e5; }
         
         #record-form { display: none; padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px; }
         #record-form label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
@@ -31,8 +32,8 @@
         .record-details { flex-grow: 1; padding-right: 15px; }
         .record-photo { max-width: 100px; max-height: 100px; border-radius: 4px; object-fit: cover; }
         .distance { font-size: 1.3em; font-weight: bold; }
-        .runner-1 { color: #007bff; } /* สีน้ำเงินสำหรับผู้ใช้คนแรก */
-        .runner-2 { color: #28a745; } /* สีเขียวสำหรับผู้ใช้คนที่สอง (และคนอื่นๆ) */
+        .runner-1 { color: #e91e63; } /* Good Girl - ชมพู */
+        .runner-2 { color: #3f51b5; } /* Good Boy - น้ำเงิน */
 
         /* สำหรับหน้าจอมือถือ */
         @media (max-width: 600px) {
@@ -44,11 +45,14 @@
 </head>
 <body>
     <div class="container">
-        <h1>🏃 Running Challenge Log</h1>
+        <h1>🏃 Running Challenge Log (2 Users)</h1>
 
-        <div id="login-status">
-            <p id="user-status" style="font-size: 1.1em;"></p>
-            <button id="google-login-btn">ล็อกอินด้วย Google</button>
+        <div id="login-form-container">
+            <p id="user-status" style="font-size: 1.1em;">กรุณาใส่รหัสประจำตัวเพื่อเข้าสู่ระบบ</p>
+            <form id="login-form">
+                <input type="text" id="user-code" placeholder="ใส่รหัส (1101 หรือ 0502)" required>
+                <button type="submit" id="login-btn">เข้าสู่ระบบ</button>
+            </form>
         </div>
 
         <form id="record-form">
@@ -67,12 +71,12 @@
 
         <h2>All Running Records</h2>
         <ul id="records-list">
-            <li style="text-align: center; color: #999;">กรุณาล็อกอินเพื่อดูสถิติ</li>
+            <li style="text-align: center; color: #999;">กรุณาเข้าสู่ระบบเพื่อดูสถิติ</li>
         </ul>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script> 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 
@@ -83,7 +87,7 @@
 	// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 	const firebaseConfig = {
   		apiKey: "AIzaSyA73fQs78Th4XGlj7xPfo0cy6GUcNK2f8w",
- 		authDomain: "running-record-64b61.firebaseapp.com",
+  		authDomain: "running-record-64b61.firebaseapp.com",
   		projectId: "running-record-64b61",
   		storageBucket: "running-record-64b61.firebasestorage.app",
   		messagingSenderId: "706728904935",
@@ -91,70 +95,104 @@
   		measurementId: "G-39EJ4D4VPP"
 	};
 
-        // 3. เริ่มต้น Firebase และบริการต่างๆ
+        // 3. ข้อมูลผู้ใช้แบบกำหนดเอง (User Dictionary)
+        const USERS = {
+            '1101': { uid: 'code_1101_good_girl', name: 'Good Girl', colorClass: 'runner-1' },
+            '0502': { uid: 'code_0502_good_boy', name: 'Good Boy', colorClass: 'runner-2' }
+        };
+
+        // 4. เริ่มต้น Firebase และบริการต่างๆ
         const app = firebase.initializeApp(firebaseConfig);
         const auth = app.auth();
         const db = app.firestore();
         const storage = app.storage();
 
-        // 4. สร้างตัวแปรสำหรับองค์ประกอบต่างๆ
+        // 5. สร้างตัวแปรสำหรับองค์ประกอบต่างๆ
         const form = document.getElementById('record-form');
         const recordsList = document.getElementById('records-list');
         const submitBtn = document.getElementById('submit-btn');
-        const googleLoginBtn = document.getElementById('google-login-btn');
         const userStatus = document.getElementById('user-status');
+        const loginForm = document.getElementById('login-form');
+        const loginContainer = document.getElementById('login-form-container');
         
+        // ตัวแปรสำหรับเก็บข้อมูลผู้ใช้ที่ล็อกอินปัจจุบัน
+        let currentUser = null; 
+
         // **********************************************
-        // ส่วน A: ระบบล็อกอิน (Authentication)
+        // ส่วน A: ระบบล็อกอิน (Code Login)
         // **********************************************
-        
-        // ฟังก์ชันจัดการล็อกอิน
-        googleLoginBtn.addEventListener('click', () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .catch(error => {
-                    if (error.code !== 'auth/popup-closed-by-user') {
-                        alert(`Login Failed: ${error.message}`);
-                    }
-                });
+
+        loginForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const code = document.getElementById('user-code').value;
+            const user = USERS[code];
+
+            if (user) {
+                // สร้าง Custom Token: ในโค้ดจริงต้องทำผ่าน Server แต่ในที่นี้เราใช้ UID แบบกำหนดเอง
+                // และทำการ Sign in Anonymously เพื่อให้สามารถใช้ Storage ได้
+                try {
+                     // เพื่อให้ Firebase Storage Security Rules (if request.auth != null) ทำงาน
+                    await auth.signInAnonymously(); 
+
+                    currentUser = user; // กำหนดผู้ใช้ปัจจุบัน
+                    
+                    // ปรับหน้าจอ
+                    userStatus.innerHTML = `Welcome back, **${currentUser.name}**! (<a href="#" id="logout-link">Logout</a>)`;
+                    loginForm.style.display = 'none';
+                    form.style.display = 'block';
+
+                    document.getElementById('logout-link').addEventListener('click', (e) => {
+                        e.preventDefault();
+                        auth.signOut();
+                        handleLogout();
+                    });
+
+                    loadAndDisplayRecords(); 
+
+                } catch (error) {
+                    console.error("Error signing in anonymously: ", error);
+                    alert("เกิดข้อผิดพลาดในการเชื่อมต่อ Firebase");
+                }
+            } else {
+                alert('รหัสไม่ถูกต้อง กรุณาใส่รหัส 1101 หรือ 0502');
+            }
         });
 
-        // ฟังก์ชันแสดงผลรายการวิ่ง
+        function handleLogout() {
+            currentUser = null;
+            userStatus.innerHTML = "กรุณาใส่รหัสประจำตัวเพื่อเข้าสู่ระบบ";
+            loginForm.style.display = 'flex'; // แสดงฟอร์มล็อกอิน
+            document.getElementById('user-code').value = '';
+            form.style.display = 'none';
+            recordsList.innerHTML = '<li style="text-align: center; color: #999;">กรุณาเข้าสู่ระบบเพื่อดูสถิติ</li>';
+        }
+
+
+        // **********************************************
+        // ส่วน B: การแสดงผลและการบันทึกข้อมูล
+        // **********************************************
+
         function displayRecord(data) {
             const listItem = document.createElement('li');
             listItem.className = 'record-item';
 
             const dateStr = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('th-TH') : 'N/A';
-            const userDisplayName = data.userName || 'Runner'; 
-            
-            // กำหนดสีตาม User ID เพื่อแยกผู้แข่งขัน 2 คน
-            let userClass = 'runner-2'; 
-            // หากคุณต้องการกำหนดสีให้ผู้ใช้คนแรก (ผู้สร้าง) เป็นสีน้ำเงิน
-            // ให้ตรวจสอบใน Firebase ว่า User ID ของผู้ใช้คนแรกคืออะไร
-            // สมมติว่า ID ของผู้ใช้คนแรกคือ 'ABCDEFGHIJ' 
-            /*
-            if (data.userId === 'ABCDEFGHIJ') { 
-                userClass = 'runner-1'; 
-            } else {
-                userClass = 'runner-2';
-            }
-            */
+            const userColorClass = data.colorClass || 'runner-2'; // ใช้ colorClass ที่บันทึกไว้
 
             listItem.innerHTML = `
                 <div class="record-details">
-                    <p class="${userClass}" style="margin: 0;">👤 **${userDisplayName}**</p>
+                    <p class="${userColorClass}" style="margin: 0;">👤 **${data.userName}**</p>
                     <p style="margin: 5px 0 0 0;">🗓️ ${dateStr}</p>
-                    <p class="distance ${userClass}" style="margin-top: 5px;">${parseFloat(data.km).toFixed(2)} km</p>
+                    <p class="distance ${userColorClass}" style="margin-top: 5px;">${parseFloat(data.km).toFixed(2)} km</p>
                 </div>
                 ${data.photoURL ? `<img src="${data.photoURL}" alt="Run Photo" class="record-photo">` : ''}
             `;
             recordsList.prepend(listItem);
         }
 
-        // 5. โหลดและแสดงข้อมูลการวิ่งทั้งหมดของผู้ใช้ทุกคน
         function loadAndDisplayRecords() {
-            recordsList.innerHTML = '<li style="text-align: center; color: #999;">Loading records...</li>';
-             // .onSnapshot คือการเปิดฟังการเปลี่ยนแปลงของข้อมูลแบบ Real-time
+            recordsList.innerHTML = '<li style="text-align: center; color: #999;">กำลังโหลดสถิติ...</li>';
+             
             db.collection("runs").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
                 recordsList.innerHTML = '';
                 if (snapshot.empty) {
@@ -170,36 +208,13 @@
             });
         }
         
-        // 6. จัดการสถานะการล็อกอิน (เมื่อผู้ใช้เข้า/ออกระบบ)
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                // ผู้ใช้ล็อกอินแล้ว
-                userStatus.innerHTML = `Welcome, **${user.displayName}**! (<a href="#" id="logout-link">Logout</a>)`;
-                form.style.display = 'block'; 
-                googleLoginBtn.style.display = 'none';
-                
-                document.getElementById('logout-link').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    auth.signOut();
-                });
-                
-                loadAndDisplayRecords(); // โหลดข้อมูลเมื่อล็อกอินแล้ว
-            } else {
-                // ผู้ใช้ออกจากระบบแล้ว
-                userStatus.innerHTML = "Please login to track and view runs.";
-                form.style.display = 'none'; 
-                googleLoginBtn.style.display = 'block';
-                recordsList.innerHTML = '<li style="text-align: center; color: #999;">กรุณาล็อกอินเพื่อดูสถิติ</li>';
-            }
-        });
-
 
         // 7. บันทึกข้อมูลการวิ่ง
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
-            const user = auth.currentUser;
-            if (!user) {
-                alert('กรุณาล็อกอินก่อนบันทึกข้อมูล');
+            
+            if (!currentUser) {
+                alert('กรุณาเข้าสู่ระบบด้วยรหัสประจำตัวก่อนบันทึกข้อมูล');
                 return;
             }
 
@@ -219,7 +234,8 @@
             try {
                 // A. อัปโหลดรูปภาพไปที่ Firebase Storage
                 const storageRef = storage.ref();
-                const photoName = `${user.uid}/${Date.now()}-${photoFile.name}`; // แยกไฟล์ตาม User ID
+                // ใช้ UID ที่กำหนดเองในการแยกโฟลเดอร์สำหรับผู้ใช้แต่ละคน
+                const photoName = `${currentUser.uid}/${Date.now()}-${photoFile.name}`; 
                 const photoRef = storageRef.child(`run_photos/${photoName}`);
                 
                 const uploadTask = await photoRef.put(photoFile);
@@ -227,8 +243,9 @@
 
                 // B. บันทึกข้อมูลลงใน Firestore
                 await db.collection("runs").add({
-                    userId: user.uid,
-                    userName: user.displayName, // เก็บชื่อผู้ใช้ที่ล็อกอิน
+                    userId: currentUser.uid,
+                    userName: currentUser.name, // เก็บชื่อผู้ใช้
+                    colorClass: currentUser.colorClass, // เก็บ Class สีสำหรับแสดงผล
                     km: parseFloat(km),
                     photoURL: photoURL,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
