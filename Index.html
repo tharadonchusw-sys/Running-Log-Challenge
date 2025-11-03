@@ -6,11 +6,10 @@
     <title>🏃‍♀️🏃‍♂️ 50km Running Challenge</title> 
     
     <style>
-        /* CSS for Styling */
+        /* CSS for Styling (Same as before) */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
         .container { max-width: 900px; margin: 20px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
         h1 { color: #333; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 5px; }
-        /* Style for subtext */
         .header-subtext { text-align: center; color: #555; margin-bottom: 20px; font-size: 1.1em; font-weight: bold; } 
 
         h2 { color: #555; border-left: 5px solid #ff9800; padding-left: 10px; }
@@ -130,7 +129,7 @@
             storageBucket: "running-record-64b61.firebasestorage.app",
             messagingSenderId: "706728904935",
             appId: "1:706728904935:web:a9fc018c50c062a3feba42",
-            measurementId: "G-39EJ4D4VPP" // Added measurementId for completeness
+            measurementId: "G-39EJ4D4VPP" 
         };
         
         const TARGET_KM = 50;
@@ -160,7 +159,7 @@
 
 
         // **********************************************
-        // Part A: Code Login System
+        // Part A: Code Login System (Simplified for Stability)
         // **********************************************
 
         loginForm.addEventListener('submit', async function(event) {
@@ -178,7 +177,7 @@
             loginBtn.textContent = 'Logging in...';
 
             try {
-                // Sign in anonymously using the correct Firebase config
+                // 💡 ลอง Log In ด้วย Anonymous Auth
                 await auth.signInAnonymously(); 
                 
                 currentUser = user; 
@@ -193,21 +192,16 @@
                     handleLogout();
                 });
 
+                // บังคับโหลดข้อมูลใหม่ (แสดงปุ่ม Delete)
                 loadAndDisplayRecords(); 
 
             } catch (error) {
                 console.error("Authentication Error: ", error);
+                // 💡 แสดง Error ที่ชัดเจนขึ้น
+                alert(`Log In Failed: ${error.message}. Check F12 Console for details.`);
                 
-                if (error.code === 'auth/operation-not-allowed') {
-                    alert('Log In Failed: Anonymous Sign-in is NOT enabled in your Firebase Project. Please enable it in Firebase Console > Authentication.');
-                } else if (error.code === 'auth/network-request-failed') {
-                    alert('Log In Failed: Network error. Please check your internet connection.');
-                } else if (error.code === 'auth/unauthorized-domain') {
-                    alert('Log In Failed: The website domain is not authorized. Check Firebase Console > Authentication > Settings > Authorized domains.');
-                } else {
-                    alert('Log In Failed: An unexpected error occurred. Check the browser console (F12) for details.');
-                }
-                
+            } finally {
+                // 💡 ให้ปุ่มกลับมาทำงานเสมอ ไม่ว่าจะสำเร็จหรือไม่ก็ตาม
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Log In';
             }
@@ -261,6 +255,7 @@
             const locationStr = data.location || 'Unknown Location'; 
             const userColorClass = data.colorClass || 'runner-2'; 
             
+            // แสดงปุ่ม Delete เมื่อ Log In แล้วเท่านั้น
             const deleteButtonHTML = currentUser ? 
                 `<button class="delete-btn" data-id="${docId}">Delete</button>` : 
                 '';
@@ -333,6 +328,7 @@
                     snapshot.forEach((doc) => {
                         const data = doc.data();
                         recordsData.push(data);
+                        // 💡 ส่ง currentUser ไปใน displayRecord เพื่อควบคุมการแสดงปุ่ม Delete
                         displayRecord(data, doc.id); 
                     });
                 }
@@ -390,4 +386,14 @@
                 alert('Run record saved successfully!');
                 form.reset();
             } catch (error) {
-                console.error("Error adding document: ", error
+                console.error("Error adding document: ", error);
+                alert(`Error saving data: ${error.message}. Check F12 console for details.`);
+            } finally {
+                // 💡 ให้ปุ่มกลับมาทำงานเสมอ
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Add Run Record';
+            }
+        });
+    </script>
+</body>
+</html>
