@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏃💨 Running Challenge Log (Code Login)</title>
+    <title>🏃💨 Running Challenge Log (Code Login + Delete)</title>
     
     <style>
         /* CSS สำหรับจัดรูปแบบ */
@@ -30,22 +30,36 @@
             border-radius: 5px; background-color: #f9f9f9; 
         }
         .record-details { flex-grow: 1; padding-right: 15px; }
-        .record-photo { max-width: 100px; max-height: 100px; border-radius: 4px; object-fit: cover; }
+        .record-photo { max-width: 100px; max-height: 100px; border-radius: 4px; object-fit: cover; margin-left: 10px; }
         .distance { font-size: 1.3em; font-weight: bold; }
         .runner-1 { color: #e91e63; } /* Good Girl - ชมพู */
         .runner-2 { color: #3f51b5; } /* Good Boy - น้ำเงิน */
+        
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-left: 15px;
+            transition: background-color 0.3s;
+        }
+        .delete-btn:hover { background-color: #d32f2f; }
 
         /* สำหรับหน้าจอมือถือ */
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 10px; }
             .record-item { flex-direction: column; align-items: flex-start; }
             .record-details { padding-right: 0; margin-bottom: 10px; }
+            .record-photo, .delete-btn { margin-top: 10px; margin-left: 0; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🏃 50km Running Challenge </h1>
+        <h1>🏃 50km Running Challenge</h1>
 
         <div id="login-form-container">
             <p id="user-status" style="font-size: 1.1em;">Please enter your secret code</p>
@@ -130,12 +144,10 @@
 
             if (user) {
                 try {
-                    // ทำการ Sign in Anonymously เพื่อให้ Firebase Storage Security Rules ทำงาน (request.auth != null)
                     await auth.signInAnonymously(); 
 
-                    currentUser = user; // กำหนดผู้ใช้ปัจจุบัน
+                    currentUser = user; 
                     
-                    // ปรับหน้าจอ
                     userStatus.innerHTML = `Welcome back, **${currentUser.name}**! (<a href="#" id="logout-link">Logout</a>)`;
                     loginForm.style.display = 'none';
                     form.style.display = 'block';
@@ -160,7 +172,7 @@
         function handleLogout() {
             currentUser = null;
             userStatus.innerHTML = "กรุณาใส่รหัสประจำตัวเพื่อเข้าสู่ระบบ";
-            loginForm.style.display = 'flex'; // แสดงฟอร์มล็อกอิน
+            loginForm.style.display = 'flex'; 
             document.getElementById('user-code').value = '';
             form.style.display = 'none';
             recordsList.innerHTML = '<li style="text-align: center; color: #999;">กรุณาเข้าสู่ระบบเพื่อดูสถิติ</li>';
@@ -168,10 +180,50 @@
 
 
         // **********************************************
-        // ส่วน B: การแสดงผลและการบันทึกข้อมูล
+        // ส่วน B: การแสดงผลและการลบข้อมูล
         // **********************************************
+        
+        // 💡 ฟังก์ชันใหม่: ลบรายการ (ทั้ง Firestore และ Storage)
+        async function deleteRecord(docId, photoURL) {
+            // 1. ถามผู้ใช้เพื่อยืนยัน
+            if (!confirm('Confirm to deleted? Running data and photos will be permanently deleted.')) {
+                return;
+            }
 
-        function displayRecord(data) {
+            try {
+                // 2. ลบรูปภาพจาก Storage (ถ้ามี)
+                if (photoURL && photoURL.startsWith('http')) {
+                    const photoRef = storage.refFromURL(photoURL);
+                    await photoRef.delete();
+                    console.log("Photo deleted from Storage successfully.");
+                }
+                
+                // 3. ลบ Document จาก Firestore
+                await db.collection('runs').doc(docId).delete();
+                
+                alert('The record has been deleted!');
+                // รายการจะอัปเดตอัตโนมัติเนื่องจาก onSnapshot 
+
+            } catch (error) {
+                console.error("Error deleting record: ", error);
+                // ถ้าเป็น error ว่ารูปภาพหาไม่เจอ (storage/object-not-found) เราจะแค่ลบเอกสารใน Firestore ต่อไป
+                if (error.code !== 'storage/object-not-found') {
+                    alert(`เกิดข้อผิดพลาดในการลบ: ${error.message}`);
+                } else {
+                    // ถ้าเกิดว่ารูปถูกลบไปแล้ว ให้ลองลบ Document ต่อ
+                    try {
+                         await db.collection('runs').doc(docId).delete();
+                         alert('ลบสถิติเรียบร้อยแล้ว! (รูปภาพหาไม่พบแต่ข้อมูลถูกลบ)');
+                    } catch (e) {
+                         alert(`เกิดข้อผิดพลาดในการลบ: ${e.message}`);
+                    }
+                }
+            }
+        }
+
+
+        // 💡 ฟังก์ชันแสดงผลรายการวิ่ง (รับ docId เข้ามา)
+        function displayRecord(data, docId) {
             const listItem = document.createElement('li');
             listItem.className = 'record-item';
 
@@ -185,10 +237,19 @@
                     <p class="distance ${userColorClass}" style="margin-top: 5px;">${parseFloat(data.km).toFixed(2)} km</p>
                 </div>
                 ${data.photoURL ? `<img src="${data.photoURL}" alt="Run Photo" class="record-photo">` : ''}
+                
+                <button class="delete-btn" data-id="${docId}" data-photo-url="${data.photoURL}">ลบ</button>
             `;
             recordsList.prepend(listItem);
+            
+            // ผูก Event Listener กับปุ่มลบ
+            const deleteButton = listItem.querySelector('.delete-btn');
+            if (deleteButton) {
+                 deleteButton.addEventListener('click', () => deleteRecord(deleteButton.dataset.id, deleteButton.dataset.photoUrl));
+            }
         }
 
+        // 💡 ฟังก์ชันโหลดและแสดงข้อมูลการวิ่ง (ดึง docId ด้วย)
         function loadAndDisplayRecords() {
             recordsList.innerHTML = '<li style="text-align: center; color: #999;">กำลังโหลดสถิติ...</li>';
              
@@ -199,7 +260,8 @@
                      return;
                 }
                 snapshot.forEach((doc) => {
-                    displayRecord(doc.data());
+                    // ดึง Document ID (doc.id) และส่งไปที่ displayRecord
+                    displayRecord(doc.data(), doc.id); 
                 });
             }, (error) => {
                 console.error("Error loading documents: ", error);
@@ -207,7 +269,7 @@
             });
         }
         
-        // ฟังก์ชันใหม่: จัดการการลดขนาดรูปภาพ
+        // ฟังก์ชันลดขนาดรูปภาพ (เหมือนเดิม)
         function resizeImage(file, maxSize) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -231,9 +293,8 @@
                     canvas.width = width;
                     canvas.height = height;
 
-                    // ใช้ pica เพื่อลดขนาดอย่างมีคุณภาพและบีบอัดเป็น JPEG
                     pica().resize(img, canvas)
-                        .then(result => pica().toBlob(result, 'image/jpeg', 0.85)) // บีบอัดเป็น JPEG 85%
+                        .then(result => pica().toBlob(result, 'image/jpeg', 0.85)) 
                         .then(blob => resolve(blob))
                         .catch(error => reject(error));
                 };
@@ -243,7 +304,7 @@
         }
 
 
-        // 7. บันทึกข้อมูลการวิ่ง
+        // 7. บันทึกข้อมูลการวิ่ง (เหมือนเดิม)
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
             
