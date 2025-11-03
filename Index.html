@@ -6,27 +6,25 @@
     <title>🏃💨 50km Running Challenge Log</title>
     
     <style>
-        /* CSS for Styling */
+        /* CSS for Styling (Omitted for brevity, assume the previous CSS is here) */
+        /* ... [CSS Styles from previous response] ... */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
         .container { max-width: 900px; margin: 20px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
         h1 { color: #333; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
         h2 { color: #555; border-left: 5px solid #ff9800; padding-left: 10px; }
         
-        /* Login Form Styling */
         #login-form-container { text-align: center; margin-bottom: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 5px; }
         #login-form { display: flex; justify-content: center; align-items: center; }
         #login-form input[type="text"] { padding: 10px; margin-right: 10px; border-radius: 4px; border: 1px solid #ccc; width: 250px; }
         #login-btn { padding: 10px 20px; background-color: #2196f3; color: white; border: none; cursor: pointer; font-size: 16px; transition: background-color 0.3s; }
         #login-btn:hover { background-color: #1e88e5; }
         
-        /* Record Form Styling */
         #record-form { display: none; padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px; }
         #record-form label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
         #record-form input[type="number"], #record-form input[type="text"], #record-form button { width: 100%; padding: 12px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         #record-form button { background-color: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; }
         #record-form button:hover { background-color: #0056b3; }
         
-        /* Records List Styling */
         #records-list { list-style: none; padding: 0; }
         .record-item { 
             display: flex; justify-content: space-between; align-items: center; 
@@ -35,8 +33,8 @@
         }
         .record-details { flex-grow: 1; padding-right: 15px; }
         .distance { font-size: 1.3em; font-weight: bold; }
-        .runner-1 { color: #e91e63; } /* Good Girl */
-        .runner-2 { color: #3f51b5; } /* Good Boy */
+        .runner-1 { color: #e91e63; }
+        .runner-2 { color: #3f51b5; }
         
         .delete-btn {
             background-color: #f44336;
@@ -51,7 +49,6 @@
         }
         .delete-btn:hover { background-color: #d32f2f; }
 
-        /* Progress Bar Styling (NEW) */
         .progress-container { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; background-color: #f0f0ff; }
         .progress-bar-wrapper { margin-bottom: 10px; }
         .progress-bar { height: 25px; background-color: #ddd; border-radius: 5px; overflow: hidden; margin-top: 5px; }
@@ -59,7 +56,6 @@
         .progress-runner-1 { background-color: #e91e63; }
         .progress-runner-2 { background-color: #3f51b5; }
 
-        /* Mobile Adjustments */
         @media (max-width: 600px) {
             .container { margin: 10px; padding: 10px; }
             .record-item { flex-direction: column; align-items: flex-start; }
@@ -118,21 +114,22 @@
         // **********************************************
         // 2. FIREBASE CONFIG: REPLACE WITH YOUR ACTUAL VALUES
         // **********************************************
+
+
 	// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 	const firebaseConfig = {
-  		apiKey: "AIzaSyA73fQs78Th4XGlj7xPfo0cy6GUcNK2f8w",
+		apiKey: "AIzaSyA73fQs78Th4XGlj7xPfo0cy6GUcNK2f8w",
   		authDomain: "running-record-64b61.firebaseapp.com",
   		projectId: "running-record-64b61",
-  		storageBucket: "running-record-64b61.firebasestorage.app",
+ 		storageBucket: "running-record-64b61.firebasestorage.app",
   		messagingSenderId: "706728904935",
   		appId: "1:706728904935:web:a9fc018c50c062a3feba42",
   		measurementId: "G-39EJ4D4VPP"
 	};
         
-        // Define Target (50km)
         const TARGET_KM = 50;
 
-        // 3. Custom User Data (with Emojis)
+        // 3. Custom User Data
         const USERS = {
             '1101': { uid: 'code_1101_good_girl', name: 'Good Girl 👧', colorClass: 'runner-1' },
             '0502': { uid: 'code_0502_good_boy', name: 'Good Boy 👦', colorClass: 'runner-2' }
@@ -150,46 +147,65 @@
         const submitBtn = document.getElementById('submit-btn');
         const userStatus = document.getElementById('user-status');
         const loginForm = document.getElementById('login-form');
-        const progressArea = document.getElementById('progress-area'); // New Element
+        const loginBtn = document.getElementById('login-btn'); // New
+        const progressArea = document.getElementById('progress-area'); 
         
         let currentUser = null; 
 
 
         // **********************************************
-        // Part A: Login (unchanged)
+        // Part A: Code Login System (Updated Error Handling)
         // **********************************************
-        // (Login logic remains the same, but loadAndDisplayRecords is called upon successful login)
-        
+
         loginForm.addEventListener('submit', async function(event) {
             event.preventDefault();
+            
             const code = document.getElementById('user-code').value;
             const user = USERS[code];
-
-            if (user) {
-                try {
-                    // Sign in to allow WRITE/DELETE permissions based on Firestore Rules
-                    await auth.signInAnonymously(); 
-                    currentUser = user; 
-                    
-                    userStatus.innerHTML = `Welcome back, **${currentUser.name}**! (<a href="#" id="logout-link">Logout</a>)`;
-                    loginForm.style.display = 'none';
-                    form.style.display = 'block';
-
-                    document.getElementById('logout-link').addEventListener('click', (e) => {
-                        e.preventDefault();
-                        auth.signOut();
-                        handleLogout();
-                    });
-
-                    // We call loadAndDisplayRecords (which also updates the progress bar)
-                    loadAndDisplayRecords(); 
-
-                } catch (error) {
-                    console.error("Error signing in anonymously: ", error);
-                    alert("Connection error to Firebase. Please check your config and rules.");
-                }
-            } else {
+            
+            if (!user) {
                 alert('Invalid code. Please enter 1101 or 0502.');
+                return;
+            }
+            
+            // Disable button while processing
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+
+            try {
+                // 💡 Attempt to sign in anonymously
+                await auth.signInAnonymously(); 
+
+                currentUser = user; 
+                
+                userStatus.innerHTML = `Welcome back, **${currentUser.name}**! (<a href="#" id="logout-link">Logout</a>)`;
+                loginForm.style.display = 'none';
+                form.style.display = 'block';
+
+                document.getElementById('logout-link').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    auth.signOut();
+                    handleLogout();
+                });
+
+                // Force data reload
+                loadAndDisplayRecords(); 
+
+            } catch (error) {
+                console.error("Authentication Error: ", error);
+                
+                // 💡 Specific error handling for disabled authentication
+                if (error.code === 'auth/operation-not-allowed') {
+                    alert('Log In Failed: Anonymous Sign-in is not enabled in your Firebase Project. Please enable it in Firebase Console > Authentication.');
+                } else if (error.code === 'auth/network-request-failed') {
+                    alert('Log In Failed: Network error. Please check your internet connection.');
+                } else {
+                    alert('Log In Failed: An unexpected error occurred. Check the console for details.');
+                }
+                
+                // Re-enable button
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Log In';
             }
         });
         
@@ -199,21 +215,26 @@
             loginForm.style.display = 'flex'; 
             document.getElementById('user-code').value = '';
             form.style.display = 'none';
-            // When logging out, we still display records (since read is public)
+            // Reload records (they should still show due to public read rule)
             loadAndDisplayRecords(); 
         }
 
+
         // **********************************************
-        // Part B: Display, Progress Bar, and Delete
+        // Part B: Display, Progress Bar, and Delete (Unchanged Logic)
         // **********************************************
         
         async function deleteRecord(docId) {
+            if (!currentUser) {
+                alert('Please log in to delete records.');
+                return;
+            }
             if (!confirm('Confirm deletion of this record?')) {
                 return;
             }
 
             try {
-                // Delete the document from Firestore (Storage deletion is skipped as we use URLs)
+                // Delete the document from Firestore 
                 await db.collection('runs').doc(docId).delete();
                 alert('Record deleted successfully!');
             } catch (error) {
@@ -250,26 +271,20 @@
                  deleteButton.addEventListener('click', () => deleteRecord(deleteButton.dataset.id));
             }
         }
-        
-        // 💡 NEW FUNCTION: Update the Progress Bar
+
         function updateProgressBar(records) {
             const totalKm = {};
-            const userDetails = {};
             
-            // Initialize totals and details
             Object.values(USERS).forEach(user => {
                 totalKm[user.uid] = 0;
-                userDetails[user.uid] = user;
             });
 
-            // Calculate totals from all records
             records.forEach(data => {
                 if (totalKm.hasOwnProperty(data.userId)) {
                     totalKm[data.userId] += parseFloat(data.km);
                 }
             });
 
-            // Determine max distance run by any single user (for comparison)
             const maxRun = Math.max(totalKm[USERS['1101'].uid], totalKm[USERS['0502'].uid], TARGET_KM); 
             const progressBarHTML = [];
 
@@ -277,12 +292,12 @@
                 const uid = user.uid;
                 const km = totalKm[uid].toFixed(2);
                 
-                // Calculate percentage based on the target or the max runner (for bar length)
                 const percentage = Math.min(100, (km / maxRun) * 100); 
+                const displayPercentage = Math.min(100, (km / TARGET_KM) * 100).toFixed(1);
 
                 progressBarHTML.push(`
                     <div class="progress-bar-wrapper">
-                        <p style="font-weight: bold; margin-bottom: 3px;" class="${user.colorClass}">${user.name}: ${km} km / ${TARGET_KM} km</p>
+                        <p style="font-weight: bold; margin-bottom: 3px;" class="${user.colorClass}">${user.name}: ${km} km (${displayPercentage}%)</p>
                         <div class="progress-bar">
                             <div class="progress-fill progress-${user.colorClass}" style="width: ${percentage}%;">
                                 ${percentage > 5 ? `${km} km` : ''}
@@ -297,6 +312,7 @@
 
 
         function loadAndDisplayRecords() {
+            // This is run even before login, relies on public read rule
             recordsList.innerHTML = '<li style="text-align: center; color: #999;">Loading records...</li>';
              
             db.collection("runs").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
@@ -313,21 +329,19 @@
                     });
                 }
                 
-                // 💡 Always update the progress bar after loading data
                 updateProgressBar(recordsData);
 
             }, (error) => {
                 console.error("Error loading documents: ", error);
-                recordsList.innerHTML = '<li style="text-align: center; color: red;">Error loading data.</li>';
-                progressArea.innerHTML = '<p style="color: red;">Error loading progress.</p>';
+                recordsList.innerHTML = '<li style="text-align: center; color: red;">Error loading data. Please check Firebase Rules.</li>';
+                progressArea.innerHTML = '<p style="color: red;">Error loading progress. Check console for details.</p>';
             });
         }
         
-        // 💡 Initial load (to show records even before login)
         loadAndDisplayRecords();
 
 
-        // 7. Save Run Record (Using URL Link - unchanged logic)
+        // 7. Save Run Record (Unchanged Logic)
         form.addEventListener('submit', async function(event) {
             event.preventDefault();
             
@@ -355,4 +369,20 @@
                     userName: currentUser.name, 
                     colorClass: currentUser.colorClass, 
                     km: parseFloat(km),
-                    photoURL
+                    photoURL: photoURL,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert('Run record saved successfully!');
+                form.reset();
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                alert(`Error saving data: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Add Run Record';
+            }
+        });
+    </script>
+</body>
+</html>
