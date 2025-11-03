@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏃💨 50km Running Challenge Log</title>
-    
-    <style>
-        /* CSS for Styling (Omitted for brevity, assume the previous CSS is here) */
-        /* ... [CSS Styles from previous response] ... */
+    <title>🏃‍♀️🏃‍♂️ 50km Running Challenge</title> <style>
+        /* CSS for Styling */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
         .container { max-width: 900px; margin: 20px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
-        h1 { color: #333; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        h1 { color: #333; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 5px; }
+        /* 💡 New style for subtext */
+        .header-subtext { text-align: center; color: #555; margin-bottom: 20px; font-size: 1.1em; font-weight: bold; } 
+
         h2 { color: #555; border-left: 5px solid #ff9800; padding-left: 10px; }
         
         #login-form-container { text-align: center; margin-bottom: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 5px; }
@@ -20,8 +20,8 @@
         #login-btn:hover { background-color: #1e88e5; }
         
         #record-form { display: none; padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px; }
+        #record-form input[type="number"], #record-form input[type="text"], #record-form input[type="date"], #record-form button { width: 100%; padding: 12px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         #record-form label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
-        #record-form input[type="number"], #record-form input[type="text"], #record-form button { width: 100%; padding: 12px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         #record-form button { background-color: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; }
         #record-form button:hover { background-color: #0056b3; }
         
@@ -68,10 +68,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>🏃 50km Running Challenge</h1>
+        <h1>🏃‍♀️🏃‍♂️ 50km Running Challenge</h1>
+        <p class="header-subtext">Run 50km to get a pair of shoes 👟</p>
 
         <div class="progress-container">
-            <h2>🏆 Challenge Progress</h2>
+            <h2>💥 Challenge Progress</h2>
             <div id="progress-area">
                 <p style="text-align: center; color: #777;">Loading progress...</p>
             </div>
@@ -88,8 +89,14 @@
         <form id="record-form">
             <h2>Add New Run Record</h2>
             
+            <label for="run-date">Date:</label>
+            <input type="date" id="run-date" name="run-date" required>
+            
             <label for="kilometers">Distance (km):</label>
             <input type="number" id="kilometers" name="kilometers" step="0.01" min="0.1" required>
+
+            <label for="location">Location:</label>
+            <input type="text" id="location" name="location" placeholder="e.g., Lumpini Park, Home Treadmill" required>
 
             <label for="photo-url">Proof Photo URL (Link):</label>
             <input type="text" id="photo-url" name="photo-url" placeholder="Paste link from Imgur, Google Photos, etc." required>
@@ -114,25 +121,23 @@
         // **********************************************
         // 2. FIREBASE CONFIG: REPLACE WITH YOUR ACTUAL VALUES
         // **********************************************
-
-
 	// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 	const firebaseConfig = {
-		apiKey: "AIzaSyA73fQs78Th4XGlj7xPfo0cy6GUcNK2f8w",
-  		authDomain: "running-record-64b61.firebaseapp.com",
-  		projectId: "running-record-64b61",
- 		storageBucket: "running-record-64b61.firebasestorage.app",
-  		messagingSenderId: "706728904935",
-  		appId: "1:706728904935:web:a9fc018c50c062a3feba42",
-  		measurementId: "G-39EJ4D4VPP"
+	  apiKey: "AIzaSyA73fQs78Th4XGlj7xPfo0cy6GUcNK2f8w",
+	  authDomain: "running-record-64b61.firebaseapp.com",
+	  projectId: "running-record-64b61",
+	  storageBucket: "running-record-64b61.firebasestorage.app",
+	  messagingSenderId: "706728904935",
+	  appId: "1:706728904935:web:a9fc018c50c062a3feba42",
+	  measurementId: "G-39EJ4D4VPP"
 	};
         
         const TARGET_KM = 50;
 
-        // 3. Custom User Data
+        // 3. Custom User Data (with Emojis)
         const USERS = {
-            '1101': { uid: 'code_1101_good_girl', name: 'Good Girl 👧', colorClass: 'runner-1' },
-            '0502': { uid: 'code_0502_good_boy', name: 'Good Boy 👦', colorClass: 'runner-2' }
+            '1101': { uid: 'code_1101_good_girl', name: 'Good Girl 👧🏃‍♀️', colorClass: 'runner-1' },
+            '0502': { uid: 'code_0502_good_boy', name: 'Good Boy 👦🏃‍♂️', colorClass: 'runner-2' }
         };
 
         // 4. Initialize Firebase
@@ -147,14 +152,14 @@
         const submitBtn = document.getElementById('submit-btn');
         const userStatus = document.getElementById('user-status');
         const loginForm = document.getElementById('login-form');
-        const loginBtn = document.getElementById('login-btn'); // New
+        const loginBtn = document.getElementById('login-btn'); 
         const progressArea = document.getElementById('progress-area'); 
         
         let currentUser = null; 
 
 
         // **********************************************
-        // Part A: Code Login System (Updated Error Handling)
+        // Part A: Code Login System
         // **********************************************
 
         loginForm.addEventListener('submit', async function(event) {
@@ -168,14 +173,11 @@
                 return;
             }
             
-            // Disable button while processing
             loginBtn.disabled = true;
             loginBtn.textContent = 'Logging in...';
 
             try {
-                // 💡 Attempt to sign in anonymously
                 await auth.signInAnonymously(); 
-
                 currentUser = user; 
                 
                 userStatus.innerHTML = `Welcome back, **${currentUser.name}**! (<a href="#" id="logout-link">Logout</a>)`;
@@ -188,13 +190,11 @@
                     handleLogout();
                 });
 
-                // Force data reload
                 loadAndDisplayRecords(); 
 
             } catch (error) {
                 console.error("Authentication Error: ", error);
                 
-                // 💡 Specific error handling for disabled authentication
                 if (error.code === 'auth/operation-not-allowed') {
                     alert('Log In Failed: Anonymous Sign-in is not enabled in your Firebase Project. Please enable it in Firebase Console > Authentication.');
                 } else if (error.code === 'auth/network-request-failed') {
@@ -203,7 +203,6 @@
                     alert('Log In Failed: An unexpected error occurred. Check the console for details.');
                 }
                 
-                // Re-enable button
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Log In';
             }
@@ -215,13 +214,12 @@
             loginForm.style.display = 'flex'; 
             document.getElementById('user-code').value = '';
             form.style.display = 'none';
-            // Reload records (they should still show due to public read rule)
             loadAndDisplayRecords(); 
         }
 
 
         // **********************************************
-        // Part B: Display, Progress Bar, and Delete (Unchanged Logic)
+        // Part B: Display, Progress Bar, and Delete
         // **********************************************
         
         async function deleteRecord(docId) {
@@ -234,7 +232,6 @@
             }
 
             try {
-                // Delete the document from Firestore 
                 await db.collection('runs').doc(docId).delete();
                 alert('Record deleted successfully!');
             } catch (error) {
@@ -247,10 +244,19 @@
             const listItem = document.createElement('li');
             listItem.className = 'record-item';
 
-            const dateStr = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('en-US') : 'N/A';
+            // Use runDate if available, otherwise fallback to timestamp
+            let dateStr;
+            if (data.runDate) {
+                dateStr = new Date(data.runDate + 'T00:00:00').toLocaleDateString('en-US'); 
+            } else if (data.timestamp) {
+                dateStr = new Date(data.timestamp.toDate()).toLocaleDateString('en-US');
+            } else {
+                dateStr = 'N/A';
+            }
+            
+            const locationStr = data.location || 'Unknown Location'; 
             const userColorClass = data.colorClass || 'runner-2'; 
             
-            // Only display delete button if a user is logged in
             const deleteButtonHTML = currentUser ? 
                 `<button class="delete-btn" data-id="${docId}">Delete</button>` : 
                 '';
@@ -258,131 +264,6 @@
             listItem.innerHTML = `
                 <div class="record-details">
                     <p class="${userColorClass}" style="margin: 0;">👤 **${data.userName}**</p>
-                    <p style="margin: 5px 0 0 0;">🗓️ ${dateStr}</p>
+                    <p style="margin: 5px 0 0 0;">🗓️ ${dateStr} - 📍 ${locationStr}</p>
                     <p class="distance ${userColorClass}" style="margin-top: 5px;">${parseFloat(data.km).toFixed(2)} km</p>
-                    ${data.photoURL ? `<p style="margin: 5px 0 0 0;">🔗 <a href="${data.photoURL}" target="_blank">View Proof</a></p>` : ''}
-                </div>
-                ${deleteButtonHTML}
-            `;
-            recordsList.prepend(listItem);
-            
-            const deleteButton = listItem.querySelector('.delete-btn');
-            if (deleteButton) {
-                 deleteButton.addEventListener('click', () => deleteRecord(deleteButton.dataset.id));
-            }
-        }
-
-        function updateProgressBar(records) {
-            const totalKm = {};
-            
-            Object.values(USERS).forEach(user => {
-                totalKm[user.uid] = 0;
-            });
-
-            records.forEach(data => {
-                if (totalKm.hasOwnProperty(data.userId)) {
-                    totalKm[data.userId] += parseFloat(data.km);
-                }
-            });
-
-            const maxRun = Math.max(totalKm[USERS['1101'].uid], totalKm[USERS['0502'].uid], TARGET_KM); 
-            const progressBarHTML = [];
-
-            Object.values(USERS).forEach(user => {
-                const uid = user.uid;
-                const km = totalKm[uid].toFixed(2);
-                
-                const percentage = Math.min(100, (km / maxRun) * 100); 
-                const displayPercentage = Math.min(100, (km / TARGET_KM) * 100).toFixed(1);
-
-                progressBarHTML.push(`
-                    <div class="progress-bar-wrapper">
-                        <p style="font-weight: bold; margin-bottom: 3px;" class="${user.colorClass}">${user.name}: ${km} km (${displayPercentage}%)</p>
-                        <div class="progress-bar">
-                            <div class="progress-fill progress-${user.colorClass}" style="width: ${percentage}%;">
-                                ${percentage > 5 ? `${km} km` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `);
-            });
-
-            progressArea.innerHTML = progressBarHTML.join('');
-        }
-
-
-        function loadAndDisplayRecords() {
-            // This is run even before login, relies on public read rule
-            recordsList.innerHTML = '<li style="text-align: center; color: #999;">Loading records...</li>';
-             
-            db.collection("runs").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
-                recordsList.innerHTML = '';
-                const recordsData = [];
-
-                if (snapshot.empty) {
-                     recordsList.innerHTML = '<li style="text-align: center; color: #999;">No running records yet.</li>';
-                } else {
-                    snapshot.forEach((doc) => {
-                        const data = doc.data();
-                        recordsData.push(data);
-                        displayRecord(data, doc.id); 
-                    });
-                }
-                
-                updateProgressBar(recordsData);
-
-            }, (error) => {
-                console.error("Error loading documents: ", error);
-                recordsList.innerHTML = '<li style="text-align: center; color: red;">Error loading data. Please check Firebase Rules.</li>';
-                progressArea.innerHTML = '<p style="color: red;">Error loading progress. Check console for details.</p>';
-            });
-        }
-        
-        loadAndDisplayRecords();
-
-
-        // 7. Save Run Record (Unchanged Logic)
-        form.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            
-            if (!currentUser) {
-                alert('Please log in with your secret code first.');
-                return;
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Saving record...'; 
-
-            const km = document.getElementById('kilometers').value;
-            const photoURL = document.getElementById('photo-url').value; 
-
-            if (!km || !photoURL) {
-                alert('Please enter distance and proof URL.');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Add Run Record';
-                return;
-            }
-
-            try {
-                await db.collection("runs").add({
-                    userId: currentUser.uid,
-                    userName: currentUser.name, 
-                    colorClass: currentUser.colorClass, 
-                    km: parseFloat(km),
-                    photoURL: photoURL,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                alert('Run record saved successfully!');
-                form.reset();
-            } catch (error) {
-                console.error("Error adding document: ", error);
-                alert(`Error saving data: ${error.message}`);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Add Run Record';
-            }
-        });
-    </script>
-</body>
-</html>
+                    ${data.photoURL ? `<p style="margin: 5px 0 0 0;">🔗 <a href="${data.photoURL}" target="_blank">
