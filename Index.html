@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏃‍♀️🏃‍♂️ 50km Running Challenge</title> <style>
+    <title>🏃‍♀️🏃‍♂️ 50km Running Challenge</title> 
+    
+    <style>
         /* CSS for Styling */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
         .container { max-width: 900px; margin: 20px auto; padding: 20px; background-color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 8px; }
         h1 { color: #333; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 5px; }
-        /* 💡 New style for subtext */
+        /* Style for subtext */
         .header-subtext { text-align: center; color: #555; margin-bottom: 20px; font-size: 1.1em; font-weight: bold; } 
 
         h2 { color: #555; border-left: 5px solid #ff9800; padding-left: 10px; }
@@ -69,7 +71,7 @@
 <body>
     <div class="container">
         <h1>🏃‍♀️🏃‍♂️ 50km Running Challenge</h1>
-        <p class="header-subtext">Run 50km to get a pair of shoes 👟</p>
+        <p class="header-subtext">Achieve 50km to get new sneakers. 👟</p>
 
         <div class="progress-container">
             <h2>💥 Challenge Progress</h2>
@@ -119,18 +121,17 @@
 
     <script>
         // **********************************************
-        // 2. FIREBASE CONFIG: REPLACE WITH YOUR ACTUAL VALUES
+        // 2. FIREBASE CONFIG: CONFIGURATION IS NOW CORRECT!
         // **********************************************
-	// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-	const firebaseConfig = {
-	  apiKey: "AIzaSyA73fQs78Th4XGlj7xPfo0cy6GUcNK2f8w",
-	  authDomain: "running-record-64b61.firebaseapp.com",
-	  projectId: "running-record-64b61",
-	  storageBucket: "running-record-64b61.firebasestorage.app",
-	  messagingSenderId: "706728904935",
-	  appId: "1:706728904935:web:a9fc018c50c062a3feba42",
-	  measurementId: "G-39EJ4D4VPP"
-	};
+        const firebaseConfig = {
+            apiKey: "AIzaSyA73fQs78Th4XGlj7xPfo0cy6GUcNK2f8w",
+            authDomain: "running-record-64b61.firebaseapp.com",
+            projectId: "running-record-64b61",
+            storageBucket: "running-record-64b61.firebasestorage.app",
+            messagingSenderId: "706728904935",
+            appId: "1:706728904935:web:a9fc018c50c062a3feba42",
+            measurementId: "G-39EJ4D4VPP" // Added measurementId for completeness
+        };
         
         const TARGET_KM = 50;
 
@@ -177,7 +178,9 @@
             loginBtn.textContent = 'Logging in...';
 
             try {
+                // Sign in anonymously using the correct Firebase config
                 await auth.signInAnonymously(); 
+                
                 currentUser = user; 
                 
                 userStatus.innerHTML = `Welcome back, **${currentUser.name}**! (<a href="#" id="logout-link">Logout</a>)`;
@@ -196,11 +199,13 @@
                 console.error("Authentication Error: ", error);
                 
                 if (error.code === 'auth/operation-not-allowed') {
-                    alert('Log In Failed: Anonymous Sign-in is not enabled in your Firebase Project. Please enable it in Firebase Console > Authentication.');
+                    alert('Log In Failed: Anonymous Sign-in is NOT enabled in your Firebase Project. Please enable it in Firebase Console > Authentication.');
                 } else if (error.code === 'auth/network-request-failed') {
                     alert('Log In Failed: Network error. Please check your internet connection.');
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    alert('Log In Failed: The website domain is not authorized. Check Firebase Console > Authentication > Settings > Authorized domains.');
                 } else {
-                    alert('Log In Failed: An unexpected error occurred. Check the console for details.');
+                    alert('Log In Failed: An unexpected error occurred. Check the browser console (F12) for details.');
                 }
                 
                 loginBtn.disabled = false;
@@ -244,7 +249,6 @@
             const listItem = document.createElement('li');
             listItem.className = 'record-item';
 
-            // Use runDate if available, otherwise fallback to timestamp
             let dateStr;
             if (data.runDate) {
                 dateStr = new Date(data.runDate + 'T00:00:00').toLocaleDateString('en-US'); 
@@ -266,4 +270,124 @@
                     <p class="${userColorClass}" style="margin: 0;">👤 **${data.userName}**</p>
                     <p style="margin: 5px 0 0 0;">🗓️ ${dateStr} - 📍 ${locationStr}</p>
                     <p class="distance ${userColorClass}" style="margin-top: 5px;">${parseFloat(data.km).toFixed(2)} km</p>
-                    ${data.photoURL ? `<p style="margin: 5px 0 0 0;">🔗 <a href="${data.photoURL}" target="_blank">
+                    ${data.photoURL ? `<p style="margin: 5px 0 0 0;">🔗 <a href="${data.photoURL}" target="_blank">View Proof</a></p>` : ''}
+                </div>
+                ${deleteButtonHTML}
+            `;
+            recordsList.prepend(listItem);
+            
+            const deleteButton = listItem.querySelector('.delete-btn');
+            if (deleteButton) {
+                 deleteButton.addEventListener('click', () => deleteRecord(deleteButton.dataset.id));
+            }
+        }
+
+        function updateProgressBar(records) {
+            const totalKm = {};
+            
+            Object.values(USERS).forEach(user => {
+                totalKm[user.uid] = 0;
+            });
+
+            records.forEach(data => {
+                if (totalKm.hasOwnProperty(data.userId)) {
+                    totalKm[data.userId] += parseFloat(data.km);
+                }
+            });
+
+            const maxRun = Math.max(totalKm[USERS['1101'].uid], totalKm[USERS['0502'].uid], TARGET_KM); 
+            const progressBarHTML = [];
+
+            Object.values(USERS).forEach(user => {
+                const uid = user.uid;
+                const km = totalKm[uid].toFixed(2);
+                
+                const percentage = Math.min(100, (km / maxRun) * 100); 
+                const displayPercentage = Math.min(100, (km / TARGET_KM) * 100).toFixed(1);
+
+                progressBarHTML.push(`
+                    <div class="progress-bar-wrapper">
+                        <p style="font-weight: bold; margin-bottom: 3px;" class="${user.colorClass}">${user.name}: ${km} km (${displayPercentage}%)</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-${user.colorClass}" style="width: ${percentage}%;">
+                                ${percentage > 5 ? `${km} km` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+
+            progressArea.innerHTML = progressBarHTML.join('');
+        }
+
+        function loadAndDisplayRecords() {
+            recordsList.innerHTML = '<li style="text-align: center; color: #999;">Loading records...</li>';
+             
+            db.collection("runs").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+                recordsList.innerHTML = '';
+                const recordsData = [];
+
+                if (snapshot.empty) {
+                     recordsList.innerHTML = '<li style="text-align: center; color: #999;">No running records yet.</li>';
+                } else {
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        recordsData.push(data);
+                        displayRecord(data, doc.id); 
+                    });
+                }
+                
+                updateProgressBar(recordsData);
+
+            }, (error) => {
+                console.error("Error loading documents: ", error);
+                recordsList.innerHTML = '<li style="text-align: center; color: red;">Error loading data. Please check Firebase Rules.</li>';
+                progressArea.innerHTML = '<p style="color: red;">Error loading progress. Check console for details.</p>';
+            });
+        }
+        
+        loadAndDisplayRecords();
+
+
+        // **********************************************
+        // 7. Save Run Record
+        // **********************************************
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            if (!currentUser) {
+                alert('Please log in with your secret code first.');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving record...'; 
+
+            const runDate = document.getElementById('run-date').value; 
+            const kilometers = document.getElementById('kilometers').value;
+            const location = document.getElementById('location').value; 
+            const photoURL = document.getElementById('photo-url').value; 
+
+            if (!runDate || !kilometers || !location || !photoURL) { 
+                alert('Please fill in all fields (Date, Distance, Location, Proof URL).');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Add Run Record';
+                return;
+            }
+
+            try {
+                await db.collection("runs").add({
+                    userId: currentUser.uid,
+                    userName: currentUser.name, 
+                    colorClass: currentUser.colorClass, 
+                    runDate: runDate, 
+                    location: location, 
+                    km: parseFloat(kilometers),
+                    photoURL: photoURL,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert('Run record saved successfully!');
+                form.reset();
+            } catch (error) {
+                console.error("Error adding document: ", error
